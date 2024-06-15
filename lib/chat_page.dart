@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:test_chat_app/user.dart';
 
 import 'chats_page.dart';
@@ -14,6 +17,32 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final TextEditingController textEditingController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
+  File? _selectedImage;
+
+  void _sendMessage() {
+    if (textEditingController.text.isNotEmpty || _selectedImage != null) {
+      setState(() {
+        sendMessage(
+          widget.user.name,
+          textEditingController.text,
+          _selectedImage,
+        );
+        textEditingController.clear();
+        _selectedImage = null;
+      });
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +122,19 @@ class _ChatPageState extends State<ChatPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(message.message),
+                            if (message.imageFile != null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 5.0),
+                                child: Image.file(
+                                  message.imageFile!,
+                                  width: 150,
+                                  height: 150,
+                                ),
+                              ),
+                            if (message.message.isNotEmpty)
+                              Text(
+                                message.message,
+                              ),
                             const SizedBox(height: 5),
                             Row(
                               children: [
@@ -135,7 +176,7 @@ class _ChatPageState extends State<ChatPage> {
           Row(
             children: [
               IconButton(
-                onPressed: () {},
+                onPressed: _pickImage,
                 icon: const Icon(Icons.attach_file),
               ),
               Expanded(
@@ -155,16 +196,17 @@ class _ChatPageState extends State<ChatPage> {
                 icon: Icon(Icons.mic),
               ),
               IconButton(
-                onPressed: () {
-                  setState(() {
-                    sendMessage(user.name, textEditingController.text);
-                    print(textEditingController.text);
-                    textEditingController.clear();
-                    for (Message message in user.messages) {
-                      print(message.message);
-                    }
-                  });
-                },
+                onPressed: _sendMessage,
+                //     () {
+                //   setState(() {
+                //     sendMessage(user.name, textEditingController.text);
+                //     print(textEditingController.text);
+                //     textEditingController.clear();
+                //     for (Message message in user.messages) {
+                //       print(message.message);
+                //     }
+                //   });
+                // },
                 icon: const Icon(Icons.send),
               ),
             ],
@@ -175,10 +217,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 }
 
-void sendMessage(
-  String userName,
-  String messageText,
-) {
+void sendMessage(String userName, String messageText, [File? imageFile]) {
   try {
     User user = listUsers.firstWhere((user) => user.name == userName);
 
@@ -187,6 +226,8 @@ void sendMessage(
       DateTime.now(),
       false,
       true,
+      imageFile: imageFile,
+
     );
 
     user.messages.add(newMessage);
