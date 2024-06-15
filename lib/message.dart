@@ -6,6 +6,15 @@ class Message {
   final bool isRead;
   final bool isSender;
   final bool isDivider;
+  Message.divider(
 
+      {
+
+        required this.message,
+        this.dateSent ,
+        this.isRead = false,
+        this.isSender = false,
+        this.isDivider = true,
+        });
 
 }

@@ -72,15 +72,14 @@ class _ChatPageState extends State<ChatPage> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
               child: ListView.separated(
-                itemCount: user.messenges.length,
+                itemCount: user.messages.length,
                 itemBuilder: (context, index) {
-                  Message message = user.messenges[index];
+                  Message message = user.messages[index];
                   if (message.isDivider) {
                     return Column(
                       children: [Text(message.message), const Divider()],
                     );
                   }
-
                   return Row(
                     children: [
                       (message.isSender) ? const Spacer() : const SizedBox(),
@@ -88,12 +87,13 @@ class _ChatPageState extends State<ChatPage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 10),
                         decoration: BoxDecoration(
-                            color: (message.isSender) ? Colors.green : Colors.blue,
+                            color:
+                                (message.isSender) ? Colors.green : Colors.blue,
                             borderRadius: BorderRadius.circular(20)),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-
+                            Text(message.message),
                             const SizedBox(height: 5),
                             Row(
                               children: [
@@ -151,13 +151,20 @@ class _ChatPageState extends State<ChatPage> {
                 ),
               ),
               IconButton(
-                onPressed: () {
-
-                },
-                icon: Icon( Icons.mic),
+                onPressed: () {},
+                icon: Icon(Icons.mic),
               ),
               IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  setState(() {
+                    sendMessage(user.name, textEditingController.text);
+                    print(textEditingController.text);
+                    textEditingController.clear();
+                    for (Message message in user.messages) {
+                      print(message.message);
+                    }
+                  });
+                },
                 icon: const Icon(Icons.send),
               ),
             ],
@@ -166,4 +173,22 @@ class _ChatPageState extends State<ChatPage> {
       ),
     );
   }
+}
+
+void sendMessage(
+  String userName,
+  String messageText,
+) {
+  try {
+    User user = listUsers.firstWhere((user) => user.name == userName);
+
+    Message newMessage = Message(
+      messageText,
+      DateTime.now(),
+      false,
+      true,
+    );
+
+    user.messages.add(newMessage);
+  } catch (e) {}
 }
