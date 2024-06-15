@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:test_chat_app/user.dart';
 
+import 'chat_page.dart';
+
 List<User> listUsers = [
   User(
     name: 'Владимир',
     color: Colors.red,
+    messenges: []
 
   ),
   User(
     name: 'Владимир',
     color: Colors.red,
+    messenges: []
 
   )
 ];
@@ -62,7 +66,12 @@ class _ChatsPageState extends State<ChatsPage> {
             
             
                 return InkWell(
-            
+                  onTap: () {
+                    Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (context) {
+                      return ChatPage(user: user);
+                    }));
+                  },
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Row(
