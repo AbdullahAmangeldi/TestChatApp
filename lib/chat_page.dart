@@ -1,7 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_sound/public/flutter_sound_player.dart';
+import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:test_chat_app/user.dart';
 
 import 'chats_page.dart';
@@ -19,17 +23,58 @@ class _ChatPageState extends State<ChatPage> {
   final TextEditingController textEditingController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
+  FlutterSoundRecorder? _recorder;
+  bool _isRecording = false;
+  String? _recordedFilePath;
+
+  @override
+  void initState() {
+    super.initState();
+    _recorder = FlutterSoundRecorder();
+    _initializeRecorder();
+  }
+
+  Future<void> _initializeRecorder() async {
+    await _recorder!.openRecorder();
+  }
+
+  @override
+  void dispose() {
+    _recorder!.closeRecorder();
+    super.dispose();
+  }
+
+  Future<void> _startRecording() async {
+    var status = await Permission.microphone.request();
+    if (status != PermissionStatus.granted) {
+      // Permission not granted, handle appropriately
+      print("Microphone permission not granted");
+      return;
+    }
+
+    Directory tempDir = await getTemporaryDirectory();
+    String path = '${tempDir.path}/flutter_sound_example.aac';
+    await _recorder!.startRecorder(toFile: path);
+    setState(() {
+      _isRecording = true;
+      _recordedFilePath = path;
+    });
+  }
+
+  Future<void> _stopRecording() async {
+    await _recorder!.stopRecorder();
+    setState(() {
+      _isRecording = false;
+    });
+  }
 
   void _sendMessage() {
-    if (textEditingController.text.isNotEmpty || _selectedImage != null) {
+    if (textEditingController.text.isNotEmpty || _selectedImage != null || _recordedFilePath != null) {
       setState(() {
-        sendMessage(
-          widget.user.name,
-          textEditingController.text,
-          _selectedImage,
-        );
+        sendMessage(widget.user.name, textEditingController.text, _selectedImage, _recordedFilePath != null ? File(_recordedFilePath!) : null);
         textEditingController.clear();
         _selectedImage = null;
+        _recordedFilePath = null;
       });
     }
   }
@@ -47,7 +92,6 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     User user = widget.user;
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -109,6 +153,7 @@ class _ChatPageState extends State<ChatPage> {
                       children: [Text(message.message), const Divider()],
                     );
                   }
+
                   return Row(
                     children: [
                       (message.isSender) ? const Spacer() : const SizedBox(),
@@ -116,8 +161,7 @@ class _ChatPageState extends State<ChatPage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 10),
                         decoration: BoxDecoration(
-                            color:
-                                (message.isSender) ? Colors.green : Colors.blue,
+                            color: (message.isSender) ? Colors.green : Colors.blue,
                             borderRadius: BorderRadius.circular(20)),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,6 +174,15 @@ class _ChatPageState extends State<ChatPage> {
                                   width: 150,
                                   height: 150,
                                 ),
+                              ),
+                            if (message.voiceFile != null)
+                              IconButton(
+                                icon: const Icon(Icons.play_arrow),
+                                onPressed: () {
+                                  FlutterSoundPlayer player = FlutterSoundPlayer();
+                                  player.openPlayer();
+                                  player.startPlayer(fromURI: message.voiceFile!.path);
+                                },
                               ),
                             if (message.message.isNotEmpty)
                               Text(
@@ -192,21 +245,17 @@ class _ChatPageState extends State<ChatPage> {
                 ),
               ),
               IconButton(
-                onPressed: () {},
-                icon: Icon(Icons.mic),
+                onPressed: () {
+                  if (_isRecording) {
+                    _stopRecording();
+                  } else {
+                    _startRecording();
+                  }
+                },
+                icon: Icon(_isRecording ? Icons.stop : Icons.mic),
               ),
               IconButton(
                 onPressed: _sendMessage,
-                //     () {
-                //   setState(() {
-                //     sendMessage(user.name, textEditingController.text);
-                //     print(textEditingController.text);
-                //     textEditingController.clear();
-                //     for (Message message in user.messages) {
-                //       print(message.message);
-                //     }
-                //   });
-                // },
                 icon: const Icon(Icons.send),
               ),
             ],
@@ -217,7 +266,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 }
 
-void sendMessage(String userName, String messageText, [File? imageFile]) {
+void sendMessage(String userName, String messageText, [File? imageFile, File? voiceFile]) {
   try {
     User user = listUsers.firstWhere((user) => user.name == userName);
 
@@ -227,9 +276,11 @@ void sendMessage(String userName, String messageText, [File? imageFile]) {
       false,
       true,
       imageFile: imageFile,
-
+      voiceFile: voiceFile,
     );
 
     user.messages.add(newMessage);
-  } catch (e) {}
+  } catch (e) {
+
+  }
 }

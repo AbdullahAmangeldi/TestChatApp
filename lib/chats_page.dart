@@ -21,13 +21,13 @@ List<User> listUsers = [
     ],
   ),
   User(
-    name: 'Владимир',
+    name: 'Инна',
     color: Colors.red,
     messages: [
       Message.divider(message: '27.01.22'),
-      Message('Сделай мне кофе, пожалуйста', DateTime.now(), true, false),
+      Message('Добрый день', DateTime.now(), true, false),
       Message.divider(message: 'Сегодня'),
-      Message('Привет', DateTime.now(), true, false),
+      Message('Все в силе?', DateTime.now(), true, false),
     ],
   )
 ];
@@ -104,7 +104,7 @@ class _ChatsPageState extends State<ChatsPage> {
                 itemBuilder: (context, index) {
                   User user = listUsers[index];
 
-                  String lastMessage = (user.messages.last.isSender )? user.messages.last.message : "Вы: ${user.messages.last.message } ";
+                  String lastMessage = (!user.messages.last.isSender )? user.messages.last.message : "Вы: ${user.messages.last.message } ";
                   Message message = user.messages.last;
                   if ( message.dateSent!.day != DateTime.now().day ) {
 
